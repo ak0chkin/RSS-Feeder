@@ -1,0 +1,18 @@
+﻿@model IEnumerable<Feed>
+@{
+    Layout = null;
+}
+    <div class="feed">
+        @if (Model != null)
+        {
+
+            foreach (var item in Model)
+            {
+                <div class="entry">
+                    <div class="entry-title"><a href="@item.Link">@item.Title</a></div>
+                    <div class="entry-date"> @item.PubDate</div>
+                    <div>@Html.Raw(item.Description)</div>
+                </div>
+            }
+        }
+    </div>

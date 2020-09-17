@@ -1,0 +1,52 @@
+﻿@model rss.Models.VievModels.FeedViewModel
+@{
+    ViewData["Title"] = "Feed";
+}
+@using (Html.BeginForm("Index", "Home", FormMethod.Post))
+{
+    <select name="Url" class="form-control select_send">
+        @foreach (var feed in Model.Urls)
+        {
+            <option value="@feed">@feed</option>
+        }
+    </select>
+}
+<div class="feed">
+    @if (Model != null)
+    {
+
+        foreach (var item in Model.Data)
+        {
+            <div class="entry">
+                <div class="entry-title"><a href="@item.Link">@item.Title</a></div>
+                <div class="entry-date"> @item.PubDate</div>
+                <div>@Html.Raw(item.Description)</div>
+            </div>
+        }
+    }
+</div>
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $('.select_send').on('change', function () {
+            loadFeed();
+        });
+        function loadFeed() {
+            $.ajax({
+                async: false,
+                method: "POST",
+                url: "/Home/Feed",
+                data: {
+                    Url: $('select').val()
+                },
+                success: function (response) {
+                    $(".feed").html(response);
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    console.log(xhr);
+                },
+            });
+        }
+    </script>
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
