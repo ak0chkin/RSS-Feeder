@@ -96,7 +96,7 @@ namespace rss.Controllers
                                 Title = ((string)x.Element("title")),
                                 Link = ((string)x.Element("link")),
                                 Description = ((string)x.Element("description")),
-                                PubDate = ((string)x.Element("pubDate"))
+                                PubDate = DateTime.Parse(((string)x.Element("pubDate"))).ToString()
                             }).ToList();
             }
             return View(feedData);
