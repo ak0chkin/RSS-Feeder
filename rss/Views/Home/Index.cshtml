@@ -1,4 +1,4 @@
-﻿@model rss.Models.VievModels.FeedViewModel
+﻿@model Settings
 @{
     ViewData["Title"] = "Feed";
 }
@@ -12,22 +12,14 @@
     </select>
 }
 <div class="feed">
-    @if (Model != null)
-    {
-
-        foreach (var item in Model.Data)
-        {
-            <div class="entry">
-                <div class="entry-title"><a href="@item.Link">@item.Title</a></div>
-                <div class="entry-date"> @item.PubDate</div>
-                <div>@Html.Raw(item.Description)</div>
-            </div>
-        }
-    }
 </div>
+
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script>
+        $(document).ready(function () {
+            loadFeed();
+            setInterval('loadFeed()', @(Model.UpdateFrequency * 1000)); 
+        });
         $('.select_send').on('change', function () {
             loadFeed();
         });

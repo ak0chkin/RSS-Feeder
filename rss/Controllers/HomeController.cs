@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Razor.Language;
 using Microsoft.Extensions.Logging;
 using rss.Models;
 using rss.Models.VievModels;
@@ -18,7 +19,7 @@ namespace rss.Controllers
 {
     public class HomeController : Controller
     {
-        private string furl;
+        private WebClient wclient;
         private NameValueCollection appSettings;
         private Configuration config;
         private readonly ILogger<HomeController> _logger;
@@ -28,6 +29,7 @@ namespace rss.Controllers
             _logger = logger;
             appSettings = ConfigurationManager.AppSettings;
             config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            wclient = new WebClient();
         }
         public IActionResult Index(string Url)
         {
@@ -36,42 +38,8 @@ namespace rss.Controllers
                 UpdateFrequency = Int32.Parse(appSettings["updateFrequency"]),
                 Urls = appSettings["urls"].Split(';').ToList()
             };
-            WebClient wclient = new WebClient();
-            var feed = new FeedViewModel
-            {
-                Urls = settings.Urls,
-                Data = new List<Feed>()
-            };
-            if (!String.IsNullOrEmpty(Url)) {
-                string data = wclient.DownloadString(Url);
-                XDocument xml = XDocument.Parse(data);
-                feed.Data = (from x in xml.Descendants("item")
-                             select new Feed
-                             {
-                                 Title = ((string)x.Element("title")),
-                                 Link = ((string)x.Element("link")),
-                                 Description = ((string)x.Element("description")),
-                                 PubDate = ((string)x.Element("pubDate"))
-                             });
-            }
-            else
-            {
-                foreach (var url in settings.Urls)
-                {
-                    string data = wclient.DownloadString(url);
-                    XDocument xml = XDocument.Parse(data);
-                    var feedData = (from x in xml.Descendants("item")
-                                    select new Feed
-                                    {
-                                        Title = ((string)x.Element("title")),
-                                        Link = ((string)x.Element("link")),
-                                        Description = ((string)x.Element("description")),
-                                        PubDate = ((string)x.Element("pubDate"))
-                                    });
-                    ((List<Feed>)feed.Data).AddRange(feedData);
-                }
-            }
-            return View(feed);
+            settings.Urls = new List<string> { "Все" }.Concat(settings.Urls);
+            return View(settings);
         }
         [HttpGet]
         public IActionResult Settings()
@@ -92,7 +60,6 @@ namespace rss.Controllers
             ConfigurationManager.RefreshSection("appSettings");
             return RedirectToAction("Settings", "Home");
         }
-        [HttpPost]
         public IActionResult Feed(string Url)
         {
             var settings = new Settings
@@ -100,17 +67,38 @@ namespace rss.Controllers
                 UpdateFrequency = Int32.Parse(appSettings["updateFrequency"]),
                 Urls = appSettings["urls"].Split(';').ToList()
             };
-            WebClient wclient = new WebClient();
-            string data = wclient.DownloadString(Url);
-            XDocument xml = XDocument.Parse(data);
-            var feedData = (from x in xml.Descendants("item")
+            
+            List<Feed> feedData = new List<Feed>();
+            if (String.IsNullOrEmpty(Url) || Url == "Все")
+            {
+                foreach (var url in settings.Urls)
+                {
+                    string data = wclient.DownloadString(url);
+                    XDocument xml = XDocument.Parse(data);
+                    feedData.AddRange((from x in xml.Descendants("item")
+                                       select new Feed
+                                       {
+                                           Title = ((string)x.Element("title")),
+                                           Link = ((string)x.Element("link")),
+                                           Description = ((string)x.Element("description")),
+                                           PubDate = DateTime.Parse(((string)x.Element("pubDate"))).ToString()
+                                       }).ToList()) ;
+                }
+                feedData = feedData.OrderByDescending(d => d.PubDate).ToList();
+            }
+            else
+            {
+                string data = wclient.DownloadString(Url);
+                XDocument xml = XDocument.Parse(data);
+                feedData = (from x in xml.Descendants("item")
                             select new Feed
                             {
                                 Title = ((string)x.Element("title")),
                                 Link = ((string)x.Element("link")),
                                 Description = ((string)x.Element("description")),
                                 PubDate = ((string)x.Element("pubDate"))
-                            });
+                            }).ToList();
+            }
             return View(feedData);
         }
 

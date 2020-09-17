@@ -9,6 +9,6 @@ namespace rss.Models
     public class Settings
     {
         public int UpdateFrequency { get; set; }
-        public List<string> Urls { get; set; }
+        public IEnumerable<string> Urls { get; set; }
     }
 }
